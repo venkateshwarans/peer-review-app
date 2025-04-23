@@ -1,24 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Peer Review - GitHub PR Review Gamification
+
+A web application that tracks and gamifies GitHub pull request reviews across an organization's repositories. The app helps encourage team members to participate in code reviews by providing metrics and visualizations.
+
+## Features
+
+- Track PR review assignments across repositories
+- Monitor review actions (approvals, change requests, comments)
+- View metrics by different time periods (weekly, monthly, quarterly, yearly)
+- Leaderboards to encourage participation
+- Visualization of review activity
+
+## Tech Stack
+
+- **Frontend**: Next.js with App Router, React, TypeScript
+- **Styling**: Tailwind CSS, Shadcn UI
+- **State Management**: React Context
+- **Data Fetching**: TanStack Query
+- **Database**: Supabase
+- **Charts**: Recharts
+- **Form Handling**: React Hook Form with Zod validation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+ and npm
+- GitHub Personal Access Token with `repo` and `read:org` scopes
+- Supabase account and project
+
+### Environment Setup
+
+Create a `.env.local` file with the following variables:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_GITHUB_TOKEN=your_github_personal_access_token
+NEXT_PUBLIC_GITHUB_ORG=your_github_organization
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Database Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Go to your Supabase project dashboard
+2. Navigate to the SQL Editor
+3. Run the SQL scripts in `src/lib/supabase/schema.sql`
+4. Run the SQL scripts in `src/lib/supabase/functions.sql`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Running Locally
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
 ## Learn More
 
