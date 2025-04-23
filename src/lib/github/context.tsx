@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { ReviewMetrics, TimeRange } from '@/types/github';
 import { generateTimeRanges } from './api';
 import { calculateReviewMetricsFromCache, syncAllGitHubData } from '@/lib/supabase/data-service';
@@ -42,12 +42,8 @@ export const GitHubProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch data when organization or timeRange changes
-  useEffect(() => {
-    refreshData();
-  }, [organization, timeRange]);
-
-  const refreshData = async () => {
+  // Define refreshData with useCallback to properly handle dependencies
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -58,13 +54,22 @@ export const GitHubProvider = ({ children }: { children: ReactNode }) => {
       // Then calculate metrics from the cached data
       const metrics = await calculateReviewMetricsFromCache(organization, timeRange);
       setReviewMetrics(metrics);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching GitHub data:', err);
-      setError(err?.message || 'Failed to fetch GitHub data. Please try again.');
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Failed to fetch GitHub data. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [organization, timeRange]);
+
+  // Fetch data when refreshData dependencies change
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   return (
     <GitHubContext.Provider

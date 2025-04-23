@@ -1,13 +1,12 @@
 import { supabase } from './client';
 import { Octokit } from '@octokit/rest';
-import { 
-  PullRequest, 
-  Repository, 
-  Review, 
+import type { 
   ReviewMetrics, 
-  TimeRange, 
-  User 
+  TimeRange 
 } from '@/types/github';
+
+// Import types only for type checking, not for runtime
+import type { PullRequest, Repository, Review, User } from '@/types/github';
 
 // GitHub token from environment variables
 const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN || '';
@@ -407,7 +406,7 @@ export const calculateReviewMetricsFromCache = async (
     if (!assignedError && assignedPRs) {
       // Count assigned PRs for each user
       const assignedCounts = new Map<number, Set<number>>();
-      assignedPRs.forEach(item => {
+      (assignedPRs as Array<{user_id: number, pull_request_id: number}>).forEach(item => {
         if (!assignedCounts.has(item.user_id)) {
           assignedCounts.set(item.user_id, new Set());
         }

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useGitHub } from '@/lib/github/context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TimeRange } from '@/types/github';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { MetricsOverview } from '@/components/dashboard/MetricsOverview';
 import { ReviewActivityChart } from '@/components/dashboard/ReviewActivityChart';
