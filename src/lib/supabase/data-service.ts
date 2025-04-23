@@ -78,13 +78,59 @@ export const syncGitHubUsers = async (
 ): Promise<void> => {
   try {
     const octokit = getOctokit(token);
+    
+    // First, get existing users from Supabase
+    const { data: existingUsers, error: fetchError } = await supabase
+      .from('github_users')
+      .select('id, login, updated_at')
+      .eq('organization', organization);
+    
+    if (fetchError) {
+      console.error('Error fetching existing users:', fetchError);
+    }
+    
+    // Create a map of existing users for quick lookup
+    const existingUserMap = new Map();
+    if (existingUsers) {
+      existingUsers.forEach(user => {
+        existingUserMap.set(user.login, {
+          id: user.id,
+          updated_at: user.updated_at
+        });
+      });
+    }
+    
+    // Get all org members
     const { data: members } = await octokit.orgs.listMembers({
       org: organization,
       per_page: 100
     });
     
+    console.log(`Found ${members.length} members in the organization.`);
+    
+    // Track which users we've seen to handle deletions later
+    const seenUsers = new Set();
+    
     // Get detailed user info for each member
     for (const member of members) {
+      seenUsers.add(member.login);
+      
+      // Check if we need to update this user
+      const existingUser = existingUserMap.get(member.login);
+      const now = new Date();
+      
+      // Skip if user was updated recently (within the last 24 hours)
+      if (existingUser && existingUser.updated_at) {
+        const lastUpdate = new Date(existingUser.updated_at);
+        const hoursSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceUpdate < 24) {
+          console.log(`Skipping user ${member.login} - updated ${Math.round(hoursSinceUpdate)} hours ago`);
+          continue;
+        }
+      }
+      
+      // Get detailed user info
       const { data: user } = await octokit.users.getByUsername({
         username: member.login
       });
@@ -99,13 +145,40 @@ export const syncGitHubUsers = async (
           avatar_url: user.avatar_url,
           html_url: user.html_url,
           email: user.email,
-          organization
+          organization,
+          created_at: existingUser ? undefined : now.toISOString(),
+          updated_at: now.toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'id,organization'
         });
       
       if (error) {
         console.error(`Error syncing user ${user.login}:`, error);
+      } else {
+        console.log(`User ${user.login} synced successfully.`);
+      }
+    }
+    
+    // Handle users who are no longer in the organization
+    if (existingUsers) {
+      for (const user of existingUsers) {
+        if (!seenUsers.has(user.login)) {
+          console.log(`User ${user.login} is no longer in the organization. Marking as inactive.`);
+          
+          // Update user status to inactive
+          const { error } = await supabase
+            .from('github_users')
+            .update({ 
+              active: false,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', user.id)
+            .eq('organization', organization);
+          
+          if (error) {
+            console.error(`Error updating user ${user.login} status:`, error);
+          }
+        }
       }
     }
   } catch (error) {
@@ -121,12 +194,57 @@ export const syncGitHubRepos = async (
 ): Promise<void> => {
   try {
     const octokit = getOctokit(token);
+    
+    // First, get existing repositories from Supabase
+    const { data: existingRepos, error: fetchError } = await supabase
+      .from('github_repositories')
+      .select('id, name, updated_at')
+      .eq('organization', organization);
+    
+    if (fetchError) {
+      console.error('Error fetching existing repositories:', fetchError);
+    }
+    
+    // Create a map of existing repositories for quick lookup
+    const existingRepoMap = new Map();
+    if (existingRepos) {
+      existingRepos.forEach(repo => {
+        existingRepoMap.set(repo.name, {
+          id: repo.id,
+          updated_at: repo.updated_at
+        });
+      });
+    }
+    
+    // Get all repositories for the organization
     const { data: repos } = await octokit.repos.listForOrg({
       org: organization,
       per_page: 100
     });
     
+    console.log(`Found ${repos.length} repositories in the organization.`);
+    
+    // Track which repositories we've seen to handle deletions later
+    const seenRepos = new Set();
+    
     for (const repo of repos) {
+      seenRepos.add(repo.name);
+      
+      // Check if we need to update this repository
+      const existingRepo = existingRepoMap.get(repo.name);
+      const now = new Date();
+      
+      // Skip if repository was updated recently (within the last 24 hours)
+      if (existingRepo && existingRepo.updated_at) {
+        const lastUpdate = new Date(existingRepo.updated_at);
+        const hoursSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceUpdate < 24) {
+          console.log(`Skipping repository ${repo.name} - updated ${Math.round(hoursSinceUpdate)} hours ago`);
+          continue;
+        }
+      }
+      
       // Insert or update repository in Supabase
       const { error } = await supabase
         .from('github_repositories')
@@ -136,13 +254,40 @@ export const syncGitHubRepos = async (
           full_name: repo.full_name,
           html_url: repo.html_url,
           description: repo.description,
-          organization
+          organization,
+          created_at: existingRepo ? undefined : now.toISOString(),
+          updated_at: now.toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'id,organization'
         });
       
       if (error) {
-        console.error(`Error syncing repo ${repo.name}:`, error);
+        console.error(`Error syncing repository ${repo.name}:`, error);
+      } else {
+        console.log(`Repository ${repo.name} synced successfully.`);
+      }
+    }
+    
+    // Handle repositories that no longer exist in the organization
+    if (existingRepos) {
+      for (const repo of existingRepos) {
+        if (!seenRepos.has(repo.name)) {
+          console.log(`Repository ${repo.name} is no longer in the organization. Marking as inactive.`);
+          
+          // Update repository status to inactive
+          const { error } = await supabase
+            .from('github_repositories')
+            .update({ 
+              active: false,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', repo.id)
+            .eq('organization', organization);
+          
+          if (error) {
+            console.error(`Error updating repository ${repo.name} status:`, error);
+          }
+        }
       }
     }
   } catch (error) {
@@ -182,34 +327,57 @@ export const syncGitHubPullRequests = async (
   try {
     const octokit = getOctokit(token);
     
-    // Get all repos
+    // Get repositories for the organization
     const { data: repos } = await supabase
       .from('github_repositories')
       .select('id, name')
       .eq('organization', organization);
     
-    if (!repos) {
-      throw new Error('No repositories found. Please sync repositories first.');
+    if (!repos || repos.length === 0) {
+      console.log('No repositories found. Sync repositories first.');
+      return;
     }
     
-    // Get last sync time
+    // Get last sync time to only fetch PRs updated after that time
     const lastSyncTime = await getLastPRSyncTime(organization);
     const since = lastSyncTime ? new Date(lastSyncTime).toISOString() : undefined;
     
     // Process each repository
     for (const repo of repos) {
-      // Get PRs updated since last sync
-      const { data: prs } = await octokit.pulls.list({
+      console.log(`Syncing pull requests for ${repo.name}...`);
+      
+      // Get pull requests for the repository, filtering by last update time if available
+      const pullRequestParams: any = {
         owner: organization,
         repo: repo.name,
         state: 'all',
-        sort: 'updated',
-        direction: 'desc',
         per_page: 100,
-        ...(since && { since })
-      });
+        sort: 'updated',
+        direction: 'desc'
+      };
       
-      for (const pr of prs) {
+      // If we have a last sync time, only get PRs updated since then
+      if (lastSyncTime) {
+        console.log(`Fetching PRs updated since ${lastSyncTime}`);
+        // GitHub API doesn't support direct filtering by update time in the request
+        // We'll filter the results after fetching
+      }
+      
+      const { data: pullRequests } = await octokit.pulls.list(pullRequestParams);
+      
+      // If we have a last sync time, filter PRs that were updated after that time
+      const filteredPRs = lastSyncTime 
+        ? pullRequests.filter(pr => new Date(pr.updated_at) > new Date(lastSyncTime))
+        : pullRequests;
+        
+      if (filteredPRs.length === 0) {
+        console.log(`No new or updated PRs for ${repo.name} since last sync.`);
+        continue;
+      }
+      
+      console.log(`Found ${filteredPRs.length} new or updated PRs for ${repo.name}.`);
+      
+      for (const pr of filteredPRs) {
         // Insert or update PR in Supabase
         const { error: prError } = await supabase
           .from('github_pull_requests')
@@ -291,7 +459,7 @@ export const syncGitHubPullRequests = async (
   }
 };
 
-// Full sync of all GitHub data
+// Sync GitHub data (incremental where possible)
 export const syncAllGitHubData = async (
   token: string = GITHUB_TOKEN,
   organization: string = DEFAULT_ORG
@@ -305,7 +473,7 @@ export const syncAllGitHubData = async (
       return;
     }
     
-    console.log('Starting full GitHub data sync...');
+    console.log('Starting GitHub data sync (incremental where possible)...');
     
     // Sync users
     await syncGitHubUsers(token, organization);
@@ -315,15 +483,15 @@ export const syncAllGitHubData = async (
     await syncGitHubRepos(token, organization);
     console.log('Repositories synced successfully.');
     
-    // Sync pull requests and reviews
+    // Sync pull requests and reviews (this is incremental based on last sync time)
     await syncGitHubPullRequests(token, organization);
     console.log('Pull requests and reviews synced successfully.');
     
     // Update sync status
     await updateSyncStatus(organization, 'full');
-    console.log('Full sync completed successfully.');
+    console.log('Incremental sync completed successfully.');
   } catch (error) {
-    console.error('Error during full sync:', error);
+    console.error('Error during sync:', error);
     throw error;
   }
 };
