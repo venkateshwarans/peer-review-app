@@ -340,14 +340,20 @@ export const syncGitHubPullRequests = async (
     
     // Get last sync time to only fetch PRs updated after that time
     const lastSyncTime = await getLastPRSyncTime(organization);
-    const since = lastSyncTime ? new Date(lastSyncTime).toISOString() : undefined;
     
     // Process each repository
     for (const repo of repos) {
       console.log(`Syncing pull requests for ${repo.name}...`);
       
       // Get pull requests for the repository, filtering by last update time if available
-      const pullRequestParams: any = {
+      const pullRequestParams: {
+        owner: string;
+        repo: string;
+        state: 'all' | 'open' | 'closed';
+        per_page: number;
+        sort: 'created' | 'updated' | 'popularity' | 'long-running';
+        direction: 'asc' | 'desc';
+      } = {
         owner: organization,
         repo: repo.name,
         state: 'all',
