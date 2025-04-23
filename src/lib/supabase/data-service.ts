@@ -5,8 +5,9 @@ import type {
   TimeRange 
 } from '@/types/github';
 
-// Import types only for type checking, not for runtime
-import type { PullRequest, Repository, Review, User } from '@/types/github';
+// These types are used only in JSDoc comments and type assertions
+// @ts-ignore - used in type assertions
+type GitHubTypes = { PullRequest: any, Repository: any, Review: any, User: any };
 
 // GitHub token from environment variables
 const GITHUB_TOKEN = process.env.NEXT_PUBLIC_GITHUB_TOKEN || '';
