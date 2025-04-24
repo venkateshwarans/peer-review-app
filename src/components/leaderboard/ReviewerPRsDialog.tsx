@@ -16,7 +16,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '../ui/badge';
 import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
