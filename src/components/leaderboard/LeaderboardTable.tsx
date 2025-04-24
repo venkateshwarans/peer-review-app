@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface LeaderboardTableProps {
   metrics: ReviewMetrics[];
@@ -32,14 +34,40 @@ type SortKey =
   | 'commentedCount' 
   | 'assignedCount';
 
+type SortDirection = 'asc' | 'desc';
+
 export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) {
   const [sortBy, setSortBy] = useState<SortKey>('totalReviewedCount');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Sort metrics by the selected key
-  const sortedMetrics = [...metrics].sort((a, b) => b[sortBy] - a[sortBy]);
+  // Sort metrics by the selected key and direction
+  const sortedMetrics = [...metrics].sort((a, b) => {
+    const valueA = a[sortBy];
+    const valueB = b[sortBy];
+    return sortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+  });
 
   const handleSortChange = (value: string) => {
     setSortBy(value as SortKey);
+  };
+  
+  const handleColumnSort = (key: SortKey) => {
+    if (sortBy === key) {
+      // Toggle direction if already sorting by this column
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+    } else {
+      // Set new sort column and default to descending
+      setSortBy(key);
+      setSortDirection('desc');
+    }
+  };
+  
+  // Helper to render sort indicator
+  const getSortIcon = (key: SortKey) => {
+    if (sortBy !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortDirection === 'desc' ? 
+      <ArrowDown className="ml-2 h-4 w-4" /> : 
+      <ArrowUp className="ml-2 h-4 w-4" />;
   };
 
   if (isLoading) {
@@ -79,11 +107,56 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
             <TableRow>
               <TableHead className="w-[60px]">Rank</TableHead>
               <TableHead>Reviewer</TableHead>
-              <TableHead className="text-right">Assigned</TableHead>
-              <TableHead className="text-right">Approved</TableHead>
-              <TableHead className="text-right">Changes</TableHead>
-              <TableHead className="text-right">Comments</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleColumnSort('assignedCount')}
+                  className="h-8 px-2 flex items-center justify-end w-full"
+                >
+                  Assigned
+                  {getSortIcon('assignedCount')}
+                </Button>
+              </TableHead>
+              <TableHead className="text-right">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleColumnSort('approvedCount')}
+                  className="h-8 px-2 flex items-center justify-end w-full"
+                >
+                  Approved
+                  {getSortIcon('approvedCount')}
+                </Button>
+              </TableHead>
+              <TableHead className="text-right">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleColumnSort('changesRequestedCount')}
+                  className="h-8 px-2 flex items-center justify-end w-full"
+                >
+                  Changes
+                  {getSortIcon('changesRequestedCount')}
+                </Button>
+              </TableHead>
+              <TableHead className="text-right">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleColumnSort('commentedCount')}
+                  className="h-8 px-2 flex items-center justify-end w-full"
+                >
+                  Comments
+                  {getSortIcon('commentedCount')}
+                </Button>
+              </TableHead>
+              <TableHead className="text-right">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleColumnSort('totalReviewedCount')}
+                  className="h-8 px-2 flex items-center justify-end w-full"
+                >
+                  Total
+                  {getSortIcon('totalReviewedCount')}
+                </Button>
+              </TableHead>
               <TableHead className="text-right">Completion</TableHead>
             </TableRow>
           </TableHeader>
