@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 export function Navbar() {
   const { organization, setOrganization, refreshData } = useGitHub();
@@ -48,6 +49,8 @@ export function Navbar() {
           >
             Refresh Data
           </Button>
+          
+          <ThemeToggle />
         </div>
       </div>
     </nav>

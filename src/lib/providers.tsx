@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, ReactNode } from 'react';
 import { GitHubProvider } from './github/context';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -15,10 +16,12 @@ export function Providers({ children }: { children: ReactNode }) {
   }));
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GitHubProvider>
-        {children}
-      </GitHubProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="light" storageKey="pr-review-theme">
+      <QueryClientProvider client={queryClient}>
+        <GitHubProvider>
+          {children}
+        </GitHubProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
