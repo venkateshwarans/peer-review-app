@@ -23,7 +23,7 @@ export function Navbar() {
     <nav className="border-b bg-background">
       <div className="container flex h-16 items-center px-4 mx-auto">
         <div className="flex items-center space-x-4">
-          <Link href="/" className="font-bold text-xl">
+          <Link href="/" className="font-semibold text-2xl tracking-tight font-sans">
             Rubber Ducks
           </Link>
         </div>

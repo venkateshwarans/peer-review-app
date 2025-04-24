@@ -17,8 +17,9 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '../ui/badge';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
 
 interface ReviewerPRsDialogProps {
   isOpen: boolean;
@@ -40,6 +41,9 @@ interface PullRequest {
   updated_at: string;
 }
 
+type SortKey = 'repository.name' | 'number' | 'state' | 'updated_at';
+type SortDirection = 'asc' | 'desc';
+
 export function ReviewerPRsDialog({ 
   isOpen, 
   onOpenChange, 
@@ -48,6 +52,8 @@ export function ReviewerPRsDialog({
 }: ReviewerPRsDialogProps) {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortKey>('updated_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     if (isOpen && reviewerId) {
@@ -169,6 +175,53 @@ export function ReviewerPRsDialog({
     }
   };
 
+  // Handle column sorting
+  const handleColumnSort = (key: SortKey) => {
+    if (sortBy === key) {
+      // If already sorting by this key, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If sorting by a new key, set it and default to descending
+      setSortBy(key);
+      setSortDirection('desc');
+    }
+  };
+
+  // Get the appropriate sort icon based on current sort state
+  const getSortIcon = (key: SortKey) => {
+    if (sortBy !== key) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
+  // Sort pull requests based on current sort settings
+  const sortedPullRequests = [...pullRequests].sort((a, b) => {
+    let valueA, valueB;
+    
+    if (sortBy === 'repository.name') {
+      valueA = a.repository.name.toLowerCase();
+      valueB = b.repository.name.toLowerCase();
+    } else if (sortBy === 'number') {
+      valueA = a.number;
+      valueB = b.number;
+    } else if (sortBy === 'state') {
+      valueA = a.state.toLowerCase();
+      valueB = b.state.toLowerCase();
+    } else { // updated_at
+      valueA = new Date(a.updated_at).getTime();
+      valueB = new Date(b.updated_at).getTime();
+    }
+    
+    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto w-[95vw] bubblegum-card">
@@ -188,14 +241,50 @@ export function ReviewerPRsDialog({
             <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[20%]">Repository</TableHead>
-                <TableHead className="w-[50%]">PR</TableHead>
-                <TableHead className="w-[15%]">Status</TableHead>
-                <TableHead className="w-[15%]">Updated</TableHead>
+                <TableHead className="w-[20%]">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleColumnSort('repository.name')}
+                    className="h-8 px-2 flex items-center justify-start w-full font-semibold hover:text-primary cursor-pointer"
+                  >
+                    Repository
+                    {getSortIcon('repository.name')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[50%]">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleColumnSort('number')}
+                    className="h-8 px-2 flex items-center justify-start w-full font-semibold hover:text-primary cursor-pointer"
+                  >
+                    PR
+                    {getSortIcon('number')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[15%]">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleColumnSort('state')}
+                    className="h-8 px-2 flex items-center justify-start w-full font-semibold hover:text-primary cursor-pointer"
+                  >
+                    Status
+                    {getSortIcon('state')}
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[15%]">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleColumnSort('updated_at')}
+                    className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary cursor-pointer"
+                  >
+                    Updated
+                    {getSortIcon('updated_at')}
+                  </Button>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pullRequests.map((pr) => (
+              {sortedPullRequests.map((pr) => (
                 <TableRow key={pr.id}>
                   <TableCell className="font-medium truncate">{pr.repository.name}</TableCell>
                   <TableCell>

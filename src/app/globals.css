@@ -36,10 +36,10 @@
   --sidebar-accent-foreground: oklch(0.32 0 0);
   --sidebar-border: oklch(0.95 0.03 307.17);
   --sidebar-ring: oklch(0.66 0.21 354.31);
-  --font-sans: Poppins, sans-serif;
-  --font-serif: Lora, serif;
-  --font-mono: Fira Code, monospace;
-  --radius: 0.4rem;
+  --font-sans: var(--font-poppins), sans-serif;
+  --font-serif: var(--font-lora), serif;
+  --font-mono: var(--font-fira-code), monospace;
+  --radius: 0.25rem;
   --shadow-2xs: 3px 3px 0px 0px hsl(325.78 58.18% 56.86% / 0.50);
   --shadow-xs: 3px 3px 0px 0px hsl(325.78 58.18% 56.86% / 0.50);
   --shadow-sm: 3px 3px 0px 0px hsl(325.78 58.18% 56.86% / 1.00), 3px 1px 2px -1px hsl(325.78 58.18% 56.86% / 1.00);
@@ -92,10 +92,10 @@
   --sidebar-accent-foreground: oklch(0.28 0.03 256.85);
   --sidebar-border: oklch(0.37 0.03 259.73);
   --sidebar-ring: oklch(0.66 0.21 354.31);
-  --font-sans: Poppins, sans-serif;
-  --font-serif: Lora, serif;
-  --font-mono: Fira Code, monospace;
-  --radius: 0.4rem;
+  --font-sans: var(--font-poppins), sans-serif;
+  --font-serif: var(--font-lora), serif;
+  --font-mono: var(--font-fira-code), monospace;
+  --radius: 0.25rem;
   --shadow-2xs: 3px 3px 0px 0px hsl(206.15 28.06% 27.25% / 0.50);
   --shadow-xs: 3px 3px 0px 0px hsl(206.15 28.06% 27.25% / 0.50);
   --shadow-sm: 3px 3px 0px 0px hsl(206.15 28.06% 27.25% / 1.00), 3px 1px 2px -1px hsl(206.15 28.06% 27.25% / 1.00);
@@ -160,7 +160,7 @@
   --shadow-lg: 2px 2px 4px 0px hsl(196 83% 10% / 0.15), 2px 4px 6px -1px hsl(196 83% 10% / 0.15);
   --shadow-xl: 2px 2px 4px 0px hsl(196 83% 10% / 0.15), 2px 8px 10px -1px hsl(196 83% 10% / 0.15);
   --shadow-2xl: 2px 2px 4px 0px hsl(196 83% 10% / 0.38);
-  --radius: 0px;
+  --radius: 0.25rem;
   --tracking-tighter: calc(0em - 0.05em);
   --tracking-tight: calc(0em - 0.025em);
   --tracking-wide: calc(0em + 0.025em);
@@ -179,6 +179,74 @@
 }
 
 @layer components {
+  /* Typography styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--foreground);
+  }
+  
+  h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+    line-height: 2rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.75rem;
+  }
+  
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+  
+  p {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6rem;
+    letter-spacing: 0.01em;
+  }
+  
+  code, pre {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+  }
+  
+  .text-xl {
+    letter-spacing: -0.01em;
+  }
+  
+  .font-semibold {
+    font-weight: 600;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    letter-spacing: 0.01em;
+  }
+  
+  .letter-spacing-tight {
+    letter-spacing: -0.01em;
+  }
+  
+  .letter-spacing-normal {
+    letter-spacing: 0;
+  }
+  
+  .letter-spacing-wide {
+    letter-spacing: 0.01em;
+  }
+  
+  /* Card styles */
   .bubblegum-card {
     border: 2px solid var(--border);
     box-shadow: var(--shadow);
@@ -223,12 +291,25 @@
 }
 
 @layer base {
-  * {
+  :root {
     border-color: var(--border);
   }
   body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+  }
+  
+  /* Ensure all text elements use the appropriate font family */
+  body, button, input, select, textarea, p, span, div, a, li, td, th {
+    font-family: var(--font-sans);
+  }
+  
+  pre, code, kbd, samp {
+    font-family: var(--font-mono);
+  }
+  
+  blockquote, q {
+    font-family: var(--font-serif);
   }
 }

@@ -47,7 +47,7 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium font-sans tracking-tight">
               Total PRs Assigned for Review
             </CardTitle>
           </CardHeader>
@@ -98,12 +98,12 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Approvals</span>
-                <span className="font-medium">{totalApproved}</span>
+                <span className="font-sans">Approvals</span>
+                <span className="font-medium font-sans">{totalApproved}</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div 
-                  className="bg-green-500 h-2.5 rounded-full" 
+                  className="bg-pink-500 dark:bg-pink-400 h-2.5 rounded-full" 
                   style={{ 
                     width: `${totalApproved + totalChangesRequested + totalCommented > 0 
                       ? (totalApproved / (totalApproved + totalChangesRequested + totalCommented)) * 100 
@@ -113,12 +113,12 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
               </div>
               
               <div className="flex justify-between">
-                <span>Changes Requested</span>
-                <span className="font-medium">{totalChangesRequested}</span>
+                <span className="font-sans">Changes Requested</span>
+                <span className="font-medium font-sans">{totalChangesRequested}</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div 
-                  className="bg-amber-500 h-2.5 rounded-full" 
+                  className="bg-pink-300 dark:bg-pink-600 h-2.5 rounded-full" 
                   style={{ 
                     width: `${totalApproved + totalChangesRequested + totalCommented > 0 
                       ? (totalChangesRequested / (totalApproved + totalChangesRequested + totalCommented)) * 100 
@@ -128,12 +128,12 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
               </div>
               
               <div className="flex justify-between">
-                <span>Comments</span>
-                <span className="font-medium">{totalCommented}</span>
+                <span className="font-sans">Comments</span>
+                <span className="font-medium font-sans">{totalCommented}</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div 
-                  className="bg-blue-500 h-2.5 rounded-full" 
+                  className="bg-pink-200 dark:bg-pink-800 h-2.5 rounded-full" 
                   style={{ 
                     width: `${totalApproved + totalChangesRequested + totalCommented > 0 
                       ? (totalCommented / (totalApproved + totalChangesRequested + totalCommented)) * 100 
@@ -147,7 +147,7 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
         
         <Card>
           <CardHeader>
-            <CardTitle>Top Reviewers</CardTitle>
+            <CardTitle className="font-sans tracking-tight">Top Reviewers</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -167,7 +167,7 @@ export function MetricsOverview({ metrics, isLoading }: MetricsOverviewProps) {
                     </p>
                   </div>
                   <div className="flex-shrink-0">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-300">
                       {reviewer.approvedCount} approvals
                     </span>
                   </div>

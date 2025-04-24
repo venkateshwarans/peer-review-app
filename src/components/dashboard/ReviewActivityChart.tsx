@@ -42,7 +42,7 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Review Activity</CardTitle>
+          <CardTitle className="font-sans tracking-tight">Review Activity</CardTitle>
         </CardHeader>
         <CardContent className="h-[400px] animate-pulse bg-muted rounded" />
       </Card>
@@ -52,7 +52,7 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Review Activity</CardTitle>
+        <CardTitle className="font-sans tracking-tight">Review Activity</CardTitle>
       </CardHeader>
       <CardContent className="h-[500px] chart-container">
         {topUsers.length > 0 ? (
@@ -73,7 +73,7 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
                 dataKey="name" 
                 type="category" 
                 width={100}
-                tick={{ fontSize: 12, fill: 'var(--foreground)' }}
+                tick={{ fontSize: 12, fill: 'var(--foreground)', fontFamily: 'var(--font-sans)' }}
                 tickLine={false}
                 axisLine={{ stroke: 'var(--border)' }}
               />
@@ -84,14 +84,15 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
                   borderColor: 'var(--border)',
                   borderRadius: 'var(--radius)',
                   color: 'var(--foreground)',
-                  boxShadow: 'var(--shadow)'
+                  boxShadow: 'var(--shadow)',
+                  fontFamily: 'var(--font-sans)'
                 }}
-                itemStyle={{ color: 'var(--foreground)' }}
-                labelStyle={{ color: 'var(--foreground)' }}
+                itemStyle={{ color: 'var(--foreground)', fontFamily: 'var(--font-sans)' }}
+                labelStyle={{ color: 'var(--foreground)', fontFamily: 'var(--font-sans)' }}
               />
               <Legend 
                 wrapperStyle={{ paddingTop: '10px' }}
-                formatter={(value) => <span style={{ color: 'var(--foreground)' }}>{value}</span>}
+                formatter={(value) => <span style={{ color: 'var(--foreground)', fontFamily: 'var(--font-sans)' }}>{value}</span>}
               />
               <Bar dataKey="approved" stackId="a" fill="var(--chart-1)" name="Approved" />
               <Bar dataKey="changesRequested" stackId="a" fill="var(--chart-2)" name="Changes Requested" />

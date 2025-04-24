@@ -45,10 +45,10 @@ export function Dashboard() {
   return (
     <div className="container mx-auto py-6 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-4xl font-semibold tracking-tight font-sans">Dashboard</h1>
         
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Time Period:</span>
+          <span className="text-sm text-muted-foreground font-sans letter-spacing-wide">Time Period:</span>
           <Tabs 
             value={timeRange.value} 
             onValueChange={handleTimeRangeChange}
