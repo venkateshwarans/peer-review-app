@@ -124,7 +124,8 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
         />
       )}
       <CardContent>
-        <Table>
+        <div className="table-container rounded-md overflow-hidden">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[60px]">Rank</TableHead>
@@ -133,7 +134,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <Button
                   variant="ghost"
                   onClick={() => handleColumnSort('assignedCount')}
-                  className="h-8 px-2 flex items-center justify-end w-full"
+                  className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary"
                 >
                   Assigned
                   {getSortIcon('assignedCount')}
@@ -143,7 +144,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <Button
                   variant="ghost"
                   onClick={() => handleColumnSort('approvedCount')}
-                  className="h-8 px-2 flex items-center justify-end w-full"
+                  className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary"
                 >
                   Approved
                   {getSortIcon('approvedCount')}
@@ -153,7 +154,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <Button
                   variant="ghost"
                   onClick={() => handleColumnSort('changesRequestedCount')}
-                  className="h-8 px-2 flex items-center justify-end w-full"
+                  className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary"
                 >
                   Changes
                   {getSortIcon('changesRequestedCount')}
@@ -163,7 +164,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <Button
                   variant="ghost"
                   onClick={() => handleColumnSort('commentedCount')}
-                  className="h-8 px-2 flex items-center justify-end w-full"
+                  className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary"
                 >
                   Comments
                   {getSortIcon('commentedCount')}
@@ -173,7 +174,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <Button
                   variant="ghost"
                   onClick={() => handleColumnSort('totalReviewedCount')}
-                  className="h-8 px-2 flex items-center justify-end w-full"
+                  className="h-8 px-2 flex items-center justify-end w-full font-semibold hover:text-primary"
                 >
                   Total
                   {getSortIcon('totalReviewedCount')}
@@ -197,7 +198,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                       className="flex items-center space-x-2 p-0 h-auto hover:bg-transparent"
                       onClick={() => handleReviewerClick(user.userId, user.name || user.login || '')}
                     >
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-8 w-8 border border-border">
                         <AvatarImage src={user.avatarUrl} alt={user.login} />
                         <AvatarFallback>
                           {user.name?.charAt(0) || user.login.charAt(0)}
@@ -241,7 +242,8 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
               </TableRow>
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

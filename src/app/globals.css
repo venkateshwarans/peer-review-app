@@ -178,6 +178,50 @@
   --spacing: var(--spacing);
 }
 
+@layer components {
+  .bubblegum-card {
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .bubblegum-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  
+  .bubblegum-button {
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.1s ease-in-out;
+  }
+  
+  .bubblegum-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+  
+  .bubblegum-button:active {
+    transform: translateY(1px);
+    box-shadow: var(--shadow-xs);
+  }
+  
+  /* Dark mode specific styling */
+  .dark .bubblegum-card {
+    background-color: var(--card);
+    border-color: var(--border);
+  }
+  
+  .dark .table-container {
+    background-color: var(--background);
+  }
+  
+  .dark .chart-container {
+    background-color: var(--card);
+  }
+}
+
 @layer base {
   * {
     border-color: var(--border);

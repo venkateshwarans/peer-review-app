@@ -171,7 +171,7 @@ export function ReviewerPRsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto w-[95vw]">
+      <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto w-[95vw] bubblegum-card">
         <DialogHeader>
           <DialogTitle className="text-xl">Pull Requests for {reviewerName}</DialogTitle>
           <DialogDescription>
@@ -181,10 +181,11 @@ export function ReviewerPRsDialog({
         
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary border-r-2 border-r-transparent"></div>
           </div>
         ) : pullRequests.length > 0 ? (
-          <Table className="min-w-full">
+          <div className="table-container rounded-md overflow-hidden">
+            <Table className="min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[20%]">Repository</TableHead>
@@ -202,7 +203,7 @@ export function ReviewerPRsDialog({
                       href={pr.html_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="flex items-center hover:underline text-primary"
+                      className="flex items-center hover:underline text-primary font-medium group"
                       title={`${pr.number} ${pr.title}`}
                     >
                       <div className="flex items-center w-full">
@@ -210,7 +211,7 @@ export function ReviewerPRsDialog({
                         <span className="truncate inline-block max-w-[calc(100%-50px)]">
                           {pr.title}
                         </span>
-                        <ExternalLink className="ml-1 h-3 w-3 flex-shrink-0" />
+                        <ExternalLink className="ml-1 h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                       </div>
                     </a>
                   </TableCell>
@@ -219,7 +220,8 @@ export function ReviewerPRsDialog({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             No pull requests found for this reviewer

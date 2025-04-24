@@ -54,7 +54,7 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
       <CardHeader>
         <CardTitle>Review Activity</CardTitle>
       </CardHeader>
-      <CardContent className="h-[500px]">
+      <CardContent className="h-[500px] chart-container">
         {topUsers.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -67,19 +67,35 @@ export function ReviewActivityChart({ metrics, isLoading }: ReviewActivityChartP
                 bottom: 5,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+              <XAxis type="number" stroke="var(--foreground)" tickLine={false} />
               <YAxis 
                 dataKey="name" 
                 type="category" 
                 width={100}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: 'var(--foreground)' }}
+                tickLine={false}
+                axisLine={{ stroke: 'var(--border)' }}
               />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="approved" stackId="a" fill="#4ade80" name="Approved" />
-              <Bar dataKey="changesRequested" stackId="a" fill="#fb923c" name="Changes Requested" />
-              <Bar dataKey="commented" stackId="a" fill="#60a5fa" name="Commented" />
+
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'var(--card)', 
+                  borderColor: 'var(--border)',
+                  borderRadius: 'var(--radius)',
+                  color: 'var(--foreground)',
+                  boxShadow: 'var(--shadow)'
+                }}
+                itemStyle={{ color: 'var(--foreground)' }}
+                labelStyle={{ color: 'var(--foreground)' }}
+              />
+              <Legend 
+                wrapperStyle={{ paddingTop: '10px' }}
+                formatter={(value) => <span style={{ color: 'var(--foreground)' }}>{value}</span>}
+              />
+              <Bar dataKey="approved" stackId="a" fill="var(--chart-1)" name="Approved" />
+              <Bar dataKey="changesRequested" stackId="a" fill="var(--chart-2)" name="Changes Requested" />
+              <Bar dataKey="commented" stackId="a" fill="var(--chart-3)" name="Commented" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
