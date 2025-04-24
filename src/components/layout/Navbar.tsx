@@ -24,7 +24,7 @@ export function Navbar() {
       <div className="container flex h-16 items-center px-4 mx-auto">
         <div className="flex items-center space-x-4">
           <Link href="/" className="font-bold text-xl">
-            Peer Review
+            Rubber Ducks
           </Link>
         </div>
         

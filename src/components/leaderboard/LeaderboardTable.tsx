@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ReviewerPRsDialog } from './ReviewerPRsDialog';
 
 interface LeaderboardTableProps {
   metrics: ReviewMetrics[];
@@ -39,6 +40,11 @@ type SortDirection = 'asc' | 'desc';
 export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) {
   const [sortBy, setSortBy] = useState<SortKey>('totalReviewedCount');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedReviewer, setSelectedReviewer] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Sort metrics by the selected key and direction
   const sortedMetrics = [...metrics].sort((a, b) => {
@@ -68,6 +74,13 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
     return sortDirection === 'desc' ? 
       <ArrowDown className="ml-2 h-4 w-4" /> : 
       <ArrowUp className="ml-2 h-4 w-4" />;
+  };
+  
+  const handleReviewerClick = (userId: string | number, name: string) => {
+    // Convert userId to string to ensure type safety
+    const userIdStr = userId.toString();
+    setSelectedReviewer({ id: userIdStr, name: name || userIdStr });
+    setDialogOpen(true);
   };
 
   if (isLoading) {
@@ -101,6 +114,15 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
           </SelectContent>
         </Select>
       </CardHeader>
+      
+      {selectedReviewer && (
+        <ReviewerPRsDialog
+          isOpen={dialogOpen}
+          onOpenChange={setDialogOpen}
+          reviewerId={selectedReviewer.id}
+          reviewerName={selectedReviewer.name}
+        />
+      )}
       <CardContent>
         <Table>
           <TableHeader>
@@ -170,15 +192,20 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                 <TableRow key={user.userId}>
                   <TableCell className="font-medium">{index + 1}</TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center space-x-2 p-0 h-auto hover:bg-transparent"
+                      onClick={() => handleReviewerClick(user.userId, user.name || user.login || '')}
+                    >
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatarUrl} alt={user.login} />
                         <AvatarFallback>
                           {user.name?.charAt(0) || user.login.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <span>{user.name || user.login}</span>
-                    </div>
+                      <span className="ml-2 text-left hover:underline">{user.name || user.login}</span>
+                      <Users className="ml-1 h-3 w-3 text-muted-foreground" />
+                    </Button>
                   </TableCell>
                   <TableCell className="text-right">{user.assignedCount}</TableCell>
                   <TableCell className="text-right">{user.approvedCount}</TableCell>
