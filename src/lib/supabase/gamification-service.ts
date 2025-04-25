@@ -213,7 +213,7 @@ export async function syncAchievements(metrics: ReviewMetrics[], timeRange: stri
 /**
  * Updates user XP and level based on review metrics
  */
-async function updateUserXPAndLevel(metric: ReviewMetrics): Promise<void> {
+export async function updateUserXPAndLevel(metric: ReviewMetrics): Promise<void> {
   // Calculate XP based on review activities
   const reviewXP = metric.totalReviewedCount * 10;
   const approvalXP = metric.approvedCount * 15;
@@ -267,9 +267,9 @@ export async function awardXP(userId: number, xp: number, activityType: string, 
   // Log the activity
   await supabase.from('activity_logs').insert({
     userid: userId,
-    reviewId,
-    xpAwarded: xp,
-    activityType,
+    reviewid: reviewId,
+    xpawarded: xp,
+    activitytype: activityType,
     timestamp: new Date().toISOString()
   });
   
@@ -393,111 +393,175 @@ export async function getUserAchievements(
   userId: number, 
   timeRange: string = 'all'
 ): Promise<(Achievement & { progress: number; isComplete: boolean; earnedAt?: string })[]> {
-  // Get all user achievements
-  const { data: userAchievements } = await supabase
-    .from('user_achievements')
-    .select('*')
-    .eq('userid', userId);
-  
-  if (!userAchievements) return [];
-  
-  // Get activity logs for time filtering
-  let startDate = new Date(0); // Default to epoch start
-  
-  switch (timeRange) {
-    case 'week':
-      startDate = new Date();
-      startDate.setDate(startDate.getDate() - 7);
-      break;
-    case 'month':
-      startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 1);
-      break;
-    case 'quarter':
-      startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 3);
-      break;
-    case 'year':
-      startDate = new Date();
-      startDate.setFullYear(startDate.getFullYear() - 1);
-      break;
-    // 'all' uses the default startDate
-  }
-  
-  // Filter achievements by time range if not 'all'
-  if (timeRange !== 'all') {
-    const { data: activityLogs } = await supabase
+  try {
+    // Get all user achievements in a single query
+    const { data: userAchievements, error: achievementsError } = await supabase
+      .from('user_achievements')
+      .select('*')
+      .eq('userid', userId);
+    
+    if (achievementsError) {
+      console.error('Error fetching user achievements:', achievementsError);
+      return [];
+    }
+    
+    if (!userAchievements || userAchievements.length === 0) {
+      // If no achievements exist yet, return all achievements with zero progress
+      return achievements.map(achievement => ({
+        ...achievement,
+        progress: 0,
+        isComplete: false
+      }));
+    }
+    
+    // For 'all' time range, just return the achievements as they are in the database
+    if (timeRange === 'all') {
+      return achievements.map(achievement => {
+        const userAchievement = userAchievements.find(ua => ua.achievementid === achievement.id);
+        return {
+          ...achievement,
+          progress: userAchievement?.progress || 0,
+          isComplete: userAchievement?.iscomplete || false,
+          earnedAt: userAchievement?.earnedat
+        };
+      });
+    }
+    
+    // For time-filtered views, we need to get activity logs
+    const startDate = new Date();
+    
+    switch (timeRange) {
+      case 'week':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case 'year':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+    }
+    
+    // Get all activity logs for this time period in a single query
+    const { data: activityLogs, error: logsError } = await supabase
       .from('activity_logs')
       .select('*')
       .eq('userid', userId)
-      .gte('timestamp', startDate.toISOString());
+      .gte('created_at', startDate.toISOString());
     
-    if (!activityLogs || activityLogs.length === 0) return [];
-    
-    // Only include achievements with activity in the time range
-    return userAchievements
-      .filter(achievement => {
-        if (!achievement.earnedat) return false;
-        
-        const earnedDate = new Date(achievement.earnedat);
-        return earnedDate >= startDate;
-      })
-      .map(achievement => {
-        // Find the corresponding achievement definition
-        const achievementDef = achievements.find(a => a.id === achievement.achievementid);
-        if (!achievementDef) return null;
-        
+    if (logsError) {
+      console.error('Error fetching activity logs:', logsError);
+      // Fall back to using the stored achievements
+      return achievements.map(achievement => {
+        const userAchievement = userAchievements.find(ua => ua.achievementid === achievement.id);
         return {
-          ...achievementDef,
-          progress: achievement.progress,
-          isComplete: achievement.iscomplete,
-          earnedAt: achievement.earnedat
+          ...achievement,
+          progress: userAchievement?.progress || 0,
+          isComplete: userAchievement?.iscomplete || false,
+          earnedAt: userAchievement?.earnedat
         };
-      })
-      .filter(Boolean) as (Achievement & { progress: number; isComplete: boolean; earnedAt?: string })[];
-  }
-  
-  // Return all achievements with their definitions
-  return userAchievements
-    .map(achievement => {
-      // Find the corresponding achievement definition
-      const achievementDef = achievements.find(a => a.id === achievement.achievementid);
-      if (!achievementDef) return null;
+      });
+    }
+    
+    if (!activityLogs || activityLogs.length === 0) {
+      // No activity in this time range, return achievements with zero progress
+      return achievements.map(achievement => ({
+        ...achievement,
+        progress: 0,
+        isComplete: false
+      }));
+    }
+    
+    // Calculate all metrics at once from the activity logs
+    const metrics = {
+      reviewCount: activityLogs.filter(log => log.type === 'review').length,
+      approvalCount: activityLogs.filter(log => log.type === 'approval').length,
+      changesRequestedCount: activityLogs.filter(log => log.type === 'changes_requested').length,
+      commentCount: activityLogs.filter(log => log.type === 'comment').length,
+      // Add other metrics as needed
+    };
+    
+    // Map achievements with progress based on filtered activity
+    return achievements.map(achievement => {
+      const userAchievement = userAchievements.find(ua => ua.achievementid === achievement.id);
+      let progress = 0;
+      let isComplete = false;
+      
+      // Calculate progress based on achievement type
+      switch (achievement.category) {
+        case 'review_count':
+          progress = Math.min(metrics.reviewCount, achievement.requiredValue);
+          isComplete = metrics.reviewCount >= achievement.requiredValue;
+          break;
+        case 'approval_count':
+          progress = Math.min(metrics.approvalCount, achievement.requiredValue);
+          isComplete = metrics.approvalCount >= achievement.requiredValue;
+          break;
+        case 'changes_requested_count':
+          progress = Math.min(metrics.changesRequestedCount, achievement.requiredValue);
+          isComplete = metrics.changesRequestedCount >= achievement.requiredValue;
+          break;
+        case 'comment_count':
+          progress = Math.min(metrics.commentCount, achievement.requiredValue);
+          isComplete = metrics.commentCount >= achievement.requiredValue;
+          break;
+        // Handle other achievement categories
+        default:
+          // Use stored values for achievement types we can't calculate from activity logs
+          progress = userAchievement?.progress || 0;
+          isComplete = userAchievement?.iscomplete || false;
+      }
       
       return {
-        ...achievementDef,
-        progress: achievement.progress,
-        isComplete: achievement.iscomplete,
-        earnedAt: achievement.earnedat
+        ...achievement,
+        progress,
+        isComplete,
+        earnedAt: userAchievement?.earnedat
       };
-    })
-    .filter(Boolean) as (Achievement & { progress: number; isComplete: boolean; earnedAt?: string })[];
+    });
+  } catch (error) {
+    console.error('Error in getUserAchievements:', error);
+    return [];
+  }
 }
 
 /**
  * Gets user profile with achievements
  */
 export async function getUserProfile(userId: number): Promise<UserProfile | null> {
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('userid', userId)
-    .single();
-  
-  if (!profile) return null;
-  
-  return {
-    userid: profile.userid,
-    login: profile.login,
-    name: profile.name || profile.login,
-    avatarurl: profile.avatarurl,
-    level: profile.level,
-    currentxp: profile.currentxp,
-    joinedat: profile.joinedat,
-    lastactive: profile.lastactive,
-    streak: profile.streak,
-    longeststreak: profile.longeststreak,
-    badges: profile.badges || [],
-    selectedbadges: profile.selectedbadges || []
-  };
+  try {
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('userid', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+    
+    if (!profile) return null;
+    
+    return {
+      userid: profile.userid,
+      login: profile.login,
+      name: profile.name || profile.login,
+      avatarurl: profile.avatarurl,
+      level: profile.level,
+      currentxp: profile.currentxp,
+      joinedat: profile.joinedat,
+      lastactive: profile.lastactive,
+      streak: profile.streak,
+      longeststreak: profile.longeststreak,
+      badges: profile.badges || [],
+      selectedbadges: profile.selectedbadges || []
+    };
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
+    return null;
+  }
 }

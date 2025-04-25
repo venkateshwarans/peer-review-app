@@ -11,7 +11,7 @@ export default function GamificationPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto py-6 px-4 md:px-6">
-        <h1 className="text-3xl font-bold mb-6 font-sans tracking-tight">Gamification</h1>
+        <h1 className="text-3xl font-bold mb-6 font-sans tracking-tight">Gamified!!!</h1>
         
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="mb-4">

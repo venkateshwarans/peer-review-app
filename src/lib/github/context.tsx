@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { ReviewMetrics, TimeRange, User } from '@/types/github';
 import { generateTimeRanges } from './api';
 import { calculateReviewMetricsFromCache, syncAllGitHubData } from '@/lib/supabase/data-service';
+import { preloadHomePageData } from '@/lib/supabase/optimized-data-service';
 
 interface GitHubContextType {
   organization: string;
@@ -58,6 +59,11 @@ export const GitHubProvider = ({ children }: { children: ReactNode }) => {
       // Then calculate metrics from the cached data
       const metrics = await calculateReviewMetricsFromCache(organization, timeRange);
       setReviewMetrics(metrics);
+      
+      // Preload data for the home page to reduce API calls
+      if (metrics.length > 0) {
+        preloadHomePageData(metrics, timeRange.value);
+      }
     } catch (err: unknown) {
       console.error('Error fetching GitHub data:', err);
       setError(
@@ -86,7 +92,7 @@ export const GitHubProvider = ({ children }: { children: ReactNode }) => {
         reviewMetrics,
         isLoading,
         error,
-        refreshData,
+        refreshData
       }}
     >
       {children}

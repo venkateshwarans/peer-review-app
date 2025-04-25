@@ -75,6 +75,33 @@ CREATE TABLE IF NOT EXISTS github_sync_status (
   UNIQUE(organization, sync_type)
 );
 
+-- Activity logs table to track user activities for achievement calculations
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id SERIAL PRIMARY KEY,
+  userid INTEGER NOT NULL,
+  reviewid INTEGER,
+  xpawarded INTEGER DEFAULT 0,
+  activitytype TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add a unique constraint to activity_logs to prevent duplicates
+CREATE UNIQUE INDEX IF NOT EXISTS activity_logs_unique_idx ON activity_logs (userid, reviewid, activitytype) WHERE reviewid IS NOT NULL AND activitytype IS NOT NULL;
+
+-- Drop any foreign key constraints on activity_logs if they exist
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'activity_logs_reviewid_fkey' 
+    AND table_name = 'activity_logs'
+  ) THEN
+    ALTER TABLE activity_logs DROP CONSTRAINT activity_logs_reviewid_fkey;
+  END IF;
+END$$;
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -85,25 +112,68 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for updated_at
-CREATE TRIGGER update_github_users_updated_at
-BEFORE UPDATE ON github_users
-FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_users_updated_at') THEN
+    CREATE TRIGGER update_github_users_updated_at
+    BEFORE UPDATE ON github_users
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
 
-CREATE TRIGGER update_github_repositories_updated_at
-BEFORE UPDATE ON github_repositories
-FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_activity_logs_updated_at') THEN
+    CREATE TRIGGER update_activity_logs_updated_at
+    BEFORE UPDATE ON activity_logs
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
 
-CREATE TRIGGER update_github_pull_requests_updated_at
-BEFORE UPDATE ON github_pull_requests
-FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_repositories_updated_at') THEN
+    CREATE TRIGGER update_github_repositories_updated_at
+    BEFORE UPDATE ON github_repositories
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
 
-CREATE TRIGGER update_github_pr_reviews_updated_at
-BEFORE UPDATE ON github_pr_reviews
-FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_pull_requests_updated_at') THEN
+    CREATE TRIGGER update_github_pull_requests_updated_at
+    BEFORE UPDATE ON github_pull_requests
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
 
-CREATE TRIGGER update_github_sync_status_updated_at
-BEFORE UPDATE ON github_sync_status
-FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_pr_reviews_updated_at') THEN
+    CREATE TRIGGER update_github_pr_reviews_updated_at
+    BEFORE UPDATE ON github_pr_reviews
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_pr_reviewers_updated_at') THEN
+    CREATE TRIGGER update_github_pr_reviewers_updated_at
+    BEFORE UPDATE ON github_pr_reviewers
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_github_sync_status_updated_at') THEN
+    CREATE TRIGGER update_github_sync_status_updated_at
+    BEFORE UPDATE ON github_sync_status
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END$$;
 
 -- Indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_pull_requests_user_id ON github_pull_requests(user_id);

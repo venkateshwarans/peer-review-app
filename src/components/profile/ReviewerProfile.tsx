@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGitHub } from '@/lib/github/context';
-import { getUserProfile, getUserAchievements, syncUserProfiles, syncAchievements } from '@/lib/supabase/gamification-service';
+import { getOptimizedUserAchievements, syncOptimizedUserData } from '@/lib/supabase/optimized-data-service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,8 +12,8 @@ import {
   Award, 
   Trophy, 
   Medal, 
-  MessageCircle,
-  CheckCircle
+  MessageCircle, 
+  CheckCircle 
 } from 'lucide-react';
 import { levels } from '@/data/achievements';
 import { AchievementTier, UserProfile, Achievement } from '@/types/gamification';
@@ -23,16 +23,18 @@ export function ReviewerProfile() {
   const { reviewMetrics, isLoading, timeRange, setTimeRange } = useGitHub();
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile] = useState<UserProfile | null>(null);
   const [userAchievements, setUserAchievements] = useState<(Achievement & { progress: number; isComplete: boolean; earnedAt?: string; maxProgress?: number })[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
   
-  // Extract unique reviewers from metrics
-  const reviewers = reviewMetrics?.map(metric => ({
-    id: metric.userId,
-    login: metric.login,
-    avatarUrl: metric.avatarUrl
-  })) || [];
+  // Extract unique reviewers from metrics - wrapped in useMemo to avoid dependency changes on every render
+  const reviewers = useMemo(() => {
+    return reviewMetrics?.map(metric => ({
+      id: metric.userId,
+      login: metric.login,
+      avatarUrl: metric.avatarUrl
+    })) || [];
+  }, [reviewMetrics]);
     
   // Set first reviewer as default when data loads
   useEffect(() => {
@@ -46,40 +48,57 @@ export function ReviewerProfile() {
     metric => metric.login === selectedReviewerId
   );
   
-  // Fetch user profile and achievements from Supabase
+  // We're using userProfile and userAchievements state from above
+  
+  // Track when profiles were last synced and which time range was used
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [lastTimeRange, setLastTimeRange] = useState<string | null>(null);
+  
+  // Fetch user profile and achievements from Supabase with optimized loading
   useEffect(() => {
     async function fetchProfileData() {
-      if (!selectedReviewerMetrics || !reviewMetrics) return;
+      if (!selectedReviewerMetrics) return;
       
       setLoadingProfile(true);
       try {
-        // First ensure all user profiles are synced
-        console.log('Syncing user profiles with IDs:', reviewMetrics.map(m => m.userId));
-        await syncUserProfiles(reviewMetrics.map(m => ({
-          id: m.userId,
-          login: m.login,
-          name: m.name || m.login,
-          avatar_url: m.avatarUrl,
-          html_url: `https://github.com/${m.login}`
-        })));
+        console.log(`Fetching data for time range: ${timeRange.value}`);
         
-        // Then sync achievements based on metrics
-        await syncAchievements(reviewMetrics, timeRange.value);
+        // Always sync when time range changes to ensure we have fresh data for that period
+        const timeRangeChanged = lastTimeRange !== timeRange.value;
+        const shouldSync = !lastSyncTime || timeRangeChanged || (new Date().getTime() - lastSyncTime.getTime() > 5 * 60 * 1000);
         
-        // Now fetch the user profile
-        console.log('Fetching user profile for ID:', selectedReviewerMetrics.userId);
-        const profile = await getUserProfile(selectedReviewerMetrics.userId);
-        console.log('Received profile:', profile);
-        setUserProfile(profile);
+        if (shouldSync) {
+          console.log(`Syncing user data for ${selectedReviewerMetrics.login} with time range: ${timeRange.value}`);
+          // Only sync data for the selected user with the selected time range
+          await syncOptimizedUserData([selectedReviewerMetrics], timeRange.value);
+          setLastSyncTime(new Date());
+          setLastTimeRange(timeRange.value);
+        } else {
+          console.log('Using cached data, skipping sync');
+        }
         
-        // Fetch achievements with time filtering
-        console.log('Fetching achievements for ID:', selectedReviewerMetrics.userId, 'with time range:', timeRange.value);
-        const achievements = await getUserAchievements(
-          selectedReviewerMetrics.userId, 
-          timeRange.value
-        );
-        console.log('Received achievements:', achievements);
-        setUserAchievements(achievements);
+        // Get achievements for the selected user (optimized to reduce API calls)
+        const achievementsMap = await getOptimizedUserAchievements([selectedReviewerMetrics.userId], timeRange.value);
+        const achievements = achievementsMap.get(selectedReviewerMetrics.userId);
+        
+        if (achievements) {
+          // Make sure the achievements match the expected type and properly handle database values
+          const formattedAchievements = achievements.map(achievement => {
+            // Log the achievement data for debugging
+            console.log(`Processing achievement ${achievement.id}: progress=${achievement.progress}, isComplete=${achievement.isComplete}`);
+            
+            return {
+              ...achievement,
+              // Ensure we're using the correct values from the database
+              progress: typeof achievement.progress === 'number' ? achievement.progress : 0,
+              isComplete: achievement.isComplete === true,
+              earnedAt: achievement.earnedAt,
+              maxProgress: achievement.requiredValue
+            };
+          });
+          
+          setUserAchievements(formattedAchievements);
+        }
       } catch (error) {
         console.error('Error fetching profile data:', error);
       } finally {
@@ -88,7 +107,7 @@ export function ReviewerProfile() {
     }
     
     fetchProfileData();
-  }, [selectedReviewerMetrics, timeRange.value, reviewMetrics]);
+  }, [selectedReviewerMetrics, timeRange.value, lastSyncTime, lastTimeRange]);
 
   if (isLoading || loadingProfile || !selectedReviewerMetrics) {
     return (
@@ -127,6 +146,7 @@ export function ReviewerProfile() {
   const progressPercentage = ((profile.currentxp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
   
   // Use fetched achievements or generate from metrics if none exist
+  // First check if we have achievements from the database
   const achievements = userAchievements.length > 0 ? userAchievements : [
     {
       id: 'review-novice',
@@ -197,7 +217,7 @@ export function ReviewerProfile() {
     }
     acc[achievement.category].push(achievement);
     return acc;
-  }, {});
+  }, {} as Record<string, typeof achievements[0][]>);
   
   // Count completed achievements
   const completedAchievements = achievements.filter(a => a.isComplete).length;
@@ -230,11 +250,16 @@ export function ReviewerProfile() {
               <span className="text-sm font-medium">Time Period:</span>
               <select
                 value={timeRange.value}
-                onChange={(e) => setTimeRange({ 
-                  ...timeRange, 
-                  value: e.target.value as TimeRangeValue,
-                  label: e.target.options[e.target.selectedIndex].text
-                })}
+                onChange={(e) => {
+                  // Clear achievements cache when time range changes
+                  setUserAchievements([]);
+                  // Update time range
+                  setTimeRange({ 
+                    ...timeRange, 
+                    value: e.target.value as TimeRangeValue,
+                    label: e.target.options[e.target.selectedIndex].text
+                  });
+                }}
                 className="px-2 py-1 rounded-md border border-pink-200 text-sm font-medium"
               >
                 <option value="week">This Week</option>
@@ -367,11 +392,11 @@ export function ReviewerProfile() {
                           
                           <div className="mt-2 space-y-1">
                             <div className="flex justify-between items-center text-xs">
-                              <span>{achievement.progress || 0} / {achievement.requiredValue}</span>
-                              <span>{Math.round(((achievement.progress || 0) / achievement.requiredValue) * 100)}%</span>
+                              <span>{achievement.progress} / {achievement.requiredValue}</span>
+                              <span>{Math.round((achievement.progress / achievement.requiredValue) * 100)}%</span>
                             </div>
                             <Progress 
-                              value={((achievement.progress || 0) / achievement.requiredValue) * 100} 
+                              value={(achievement.progress / achievement.requiredValue) * 100} 
                               className="h-1.5" 
                             />
                           </div>

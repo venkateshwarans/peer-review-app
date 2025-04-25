@@ -69,6 +69,7 @@ export function Dashboard() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="gamified">Gamified</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
         
@@ -78,6 +79,24 @@ export function Dashboard() {
         
         <TabsContent value="leaderboard">
           <LeaderboardTable metrics={reviewMetrics} isLoading={isLoading} />
+        </TabsContent>
+        
+        <TabsContent value="gamified">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Gamified Experience</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-8">
+                <a href="/gamification" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                  Go to Gamified Dashboard
+                </a>
+                <p className="mt-4 text-sm text-muted-foreground max-w-md text-center">
+                  View your achievements, track your progress, and compete with your team in our gamified PR review experience.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="activity">

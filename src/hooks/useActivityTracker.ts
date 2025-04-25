@@ -49,7 +49,7 @@ export function useActivityTracker() {
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('userId', user.id)
+            .eq('userid', user.id)
             .single();
 
           if (profileError && profileError.code !== 'PGRST116') {
@@ -64,8 +64,8 @@ export function useActivityTracker() {
             const { data: existingXP } = await supabase
               .from('activity_logs')
               .select('*')
-              .eq('userId', user.id)
-              .eq('reviewId', review.id)
+              .eq('userid', user.id)
+              .eq('reviewid', review.id)
               .single();
 
             if (!existingXP) {
@@ -88,10 +88,10 @@ export function useActivityTracker() {
 
               // Log activity
               await supabase.from('activity_logs').insert({
-                userId: user.id,
-                reviewId: review.id,
-                xpAwarded: xpAmount,
-                activityType: review.state,
+                userid: user.id,
+                reviewid: review.id,
+                xpawarded: xpAmount,
+                activitytype: review.state,
                 timestamp: new Date().toISOString()
               });
             }
@@ -99,12 +99,12 @@ export function useActivityTracker() {
 
           // Update user XP if needed
           if (xpGained > 0 && profile) {
-            const newXP = (profile.currentXP || 0) + xpGained;
+            const newXP = (profile.currentxp || 0) + xpGained;
             
             await supabase
               .from('user_profiles')
-              .update({ currentXP: newXP })
-              .eq('userId', user.id);
+              .update({ currentxp: newXP })
+              .eq('userid', user.id);
           }
 
           // Format reviews for display
