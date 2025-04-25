@@ -21,7 +21,7 @@ export function Navbar() {
 
   return (
     <nav className="border-b bg-background">
-      <div className="container flex h-16 items-center px-4 mx-auto">
+      <div className="container flex h-16 items-center mx-auto">
         <div className="flex items-center space-x-4">
           <Link href="/" className="font-semibold text-2xl tracking-tight font-sans">
             Rubber Ducks
@@ -42,7 +42,8 @@ export function Navbar() {
             </Select>
           </div>
           
-          <Button 
+          <Button
+            className='pointer'
             variant="outline" 
             size="sm" 
             onClick={() => refreshData()}

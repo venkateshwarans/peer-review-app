@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Lora, Fira_Code } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
+import { Toaster } from "@/components/ui/toaster";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -36,7 +37,10 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${lora.variable} ${firaCode.variable} antialiased font-sans`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -95,22 +94,20 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex flex-row items-center justify-between bg-card p-3 rounded-md border border-border">
+        <div className="flex flex-row items-center justify-between py-1 px-2">
           <h2 className="text-xl font-semibold font-sans tracking-tight">Leaderboard</h2>
           <div className="w-[180px] h-10 bg-muted rounded animate-pulse"></div>
         </div>
-        <Card>
-          <CardContent className="p-0">
-            <div className="h-[400px] animate-pulse bg-muted rounded"></div>
-          </CardContent>
-        </Card>
+        <div className="border border-pink-200 rounded-md overflow-hidden">
+          <div className="h-[400px] animate-pulse bg-muted"></div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-row items-center justify-between bg-card p-3 rounded-md border border-border">
+      <div className="flex flex-row items-center justify-between py-1 px-2">
         <h2 className="text-xl font-semibold font-sans tracking-tight">Leaderboard</h2>
         <Select value={sortBy} onValueChange={handleSortChange}>
           <SelectTrigger className="w-[180px]">
@@ -135,14 +132,13 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
         />
       )}
       
-      <Card className="overflow-hidden border-border bubblegum-card">
-        <CardContent className="p-0">
-          <div className="table-container">
+      <div className="overflow-hidden border border-pink-200 rounded-md">
+        <div className="table-container">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-border bg-yellow-50 dark:bg-yellow-950/20">
+                <TableRow className="border-b border-pink-100 bg-yellow-50 dark:bg-yellow-950/20">
                   <TableHead className="w-[60px] py-2 font-sans">Rank</TableHead>
-                  <TableHead className="py-2 font-sans">Reviewer</TableHead>
+                  <TableHead className="py-2 font-sans w-[200px]">Reviewer</TableHead>
                   <TableHead className="text-right">
                     <Button
                       variant="ghost"
@@ -203,9 +199,9 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
                     : 0;
                     
                   return (
-                    <TableRow key={user.userId} className="hover:bg-yellow-50/50 dark:hover:bg-yellow-950/10 even:bg-yellow-50/30 dark:even:bg-yellow-950/10">
+                    <TableRow key={user.userId} className="hover:bg-yellow-50/50 dark:hover:bg-yellow-950/10 even:bg-yellow-50/30 dark:even:bg-yellow-950/10 border-b border-pink-50">
                       <TableCell className="font-medium py-1.5 font-sans">{index + 1}</TableCell>
-                      <TableCell className="py-1.5">
+                      <TableCell className="py-1.5 w-[200px]">
                         <Button
                           variant="ghost"
                           className="flex items-center space-x-2 p-0 h-auto hover:bg-transparent cursor-pointer"
@@ -257,8 +253,7 @@ export function LeaderboardTable({ metrics, isLoading }: LeaderboardTableProps) 
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
     </div>
   );
 }

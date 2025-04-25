@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { ReviewMetrics, TimeRange } from '@/types/github';
+import { ReviewMetrics, TimeRange, User } from '@/types/github';
 import { generateTimeRanges } from './api';
 import { calculateReviewMetricsFromCache, syncAllGitHubData } from '@/lib/supabase/data-service';
 
@@ -15,6 +15,8 @@ interface GitHubContextType {
   isLoading: boolean;
   error: string | null;
   refreshData: () => Promise<void>;
+  user?: User;
+  metrics?: ReviewMetrics[];
 }
 
 const defaultTimeRanges = generateTimeRanges();
@@ -29,6 +31,8 @@ const GitHubContext = createContext<GitHubContextType>({
   isLoading: false,
   error: null,
   refreshData: async () => {},
+  user: undefined,
+  metrics: [],
 });
 
 export const useGitHub = () => useContext(GitHubContext);

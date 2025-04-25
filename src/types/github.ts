@@ -58,10 +58,12 @@ export interface ReviewMetrics {
 
 export interface TimeRange {
   label: string;
-  value: 'week' | 'month' | 'quarter' | 'year';
+  value: TimeRangeValue;
   startDate: Date;
   endDate: Date;
 }
+
+export type TimeRangeValue = 'week' | 'month' | 'quarter' | 'year' | 'all';
 
 export interface ReviewStats {
   timeRange: TimeRange;
