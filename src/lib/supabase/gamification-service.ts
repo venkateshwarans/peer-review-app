@@ -10,39 +10,68 @@ import { achievements } from '@/data/achievements';
  * Creates or updates user profiles based on GitHub data
  */
 export async function syncUserProfiles(users: User[]): Promise<void> {
-  for (const user of users) {
-    const { data: existingProfile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('userid', user.id)
-      .single();
+  // Process users in batches to avoid too many concurrent requests
+  const batchSize = 5;
+  for (let i = 0; i < users.length; i += batchSize) {
+    const batch = users.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map(async (user) => {
+        try {
+          // First check if user exists
+          const { data: existingUser } = await supabase
+            .from('user_profiles')
+            .select('userid')
+            .eq('userid', user.id)
+            .single();
+          
+          if (!existingUser) {
+            // Insert new user
+            const { error } = await supabase
+              .from('user_profiles')
+              .insert({
+                userid: user.id,
+                login: user.login,
+                name: user.name || user.login,
+                avatarurl: user.avatar_url,
+                currentxp: 0,
+                level: 1,
+                title: 'Novice Reviewer',
+                joinedat: new Date().toISOString(),
+                lastactive: new Date().toISOString(),
+                streak: 0,
+                longeststreak: 0,
+                badges: [],
+                selectedbadges: []
+              });
+              
+            if (error) {
+              console.error(`Error creating profile for user ${user.login}:`, error);
+            }
+          } else {
+            // Update existing user
+            const { error } = await supabase
+              .from('user_profiles')
+              .update({
+                login: user.login,
+                name: user.name || user.login,
+                avatarurl: user.avatar_url,
+                lastactive: new Date().toISOString()
+              })
+              .eq('userid', user.id);
+              
+            if (error) {
+              console.error(`Error updating profile for user ${user.login}:`, error);
+            }
+          }
+        } catch (err) {
+          console.error(`Exception syncing profile for user ${user.login}:`, err);
+        }
+      })
+    );
     
-    if (!existingProfile) {
-      // Create new profile
-      await supabase.from('user_profiles').insert({
-        userid: user.id,
-        login: user.login,
-        name: user.name || user.login,
-        avatarurl: user.avatar_url,
-        currentxp: 0,
-        level: 1,
-        title: 'Novice Reviewer',
-        joinedat: new Date().toISOString(),
-        lastactive: new Date().toISOString(),
-        streak: 0,
-        longeststreak: 0
-      });
-    } else {
-      // Update existing profile
-      await supabase
-        .from('user_profiles')
-        .update({
-          login: user.login,
-          name: user.name || user.login,
-          avatarurl: user.avatar_url,
-          lastactive: new Date().toISOString()
-        })
-        .eq('userid', user.id);
+    // Add a small delay between batches to reduce server load
+    if (i + batchSize < users.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 }
@@ -53,23 +82,36 @@ export async function syncUserProfiles(users: User[]): Promise<void> {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function syncAchievements(metrics: ReviewMetrics[], timeRange: string): Promise<void> {
-  for (const metric of metrics) {
-    // First ensure user profile exists
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('userid', metric.userId)
-      .single();
+  // Process metrics in batches to avoid too many concurrent requests
+  const batchSize = 3;
+  for (let i = 0; i < metrics.length; i += batchSize) {
+    const batch = metrics.slice(i, i + batchSize);
     
-    if (!userProfile) {
-      console.error(`User profile not found for userId: ${metric.userId}`);
-      continue;
-    }
-    
-    // Process each achievement
-    for (const achievement of achievements) {
-      let progress = 0;
-      let isComplete = false;
+    await Promise.all(
+      batch.map(async (metric) => {
+        try {
+          // First ensure user profile exists
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('userid', metric.userId)
+            .single();
+          
+          if (!userProfile) {
+            console.error(`User profile not found for userId: ${metric.userId}`);
+            return;
+          }
+          
+          // Get existing achievements for this user
+          const { data: existingAchievements } = await supabase
+            .from('user_achievements')
+            .select('*')
+            .eq('userid', metric.userId);
+          
+          // Process each achievement
+          for (const achievement of achievements) {
+            let progress = 0;
+            let isComplete = false;
       
       // Calculate progress based on achievement criteria
       switch (achievement.id) {
@@ -100,71 +142,71 @@ export async function syncAchievements(metrics: ReviewMetrics[], timeRange: stri
         // Add more achievement calculations here
       }
       
-      // Check if achievement already exists
-      const { data: existingAchievement } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('userid', metric.userId)
-        .eq('achievementid', achievement.id)
-        .single();
-      
-      if (!existingAchievement) {
-        // Create new achievement record
-        await supabase.from('user_achievements').insert({
-          userid: metric.userId,
-          achievementid: achievement.id,
-          progress,
-          iscomplete: isComplete,
-          earnedat: isComplete ? new Date().toISOString() : null
-        });
-        
-        // Award XP if achievement is completed
-        if (isComplete) {
-          await awardXP(metric.userId, 50, 'achievement_earned');
-          
-          // Create notification
-          await supabase.from('notifications').insert({
-            userid: metric.userId,
-            type: 'achievement',
-            title: `Achievement Unlocked: ${achievement.name}`,
-            message: achievement.description,
-            data: { achievementid: achievement.id },
-            isread: false
-          });
+            // Find if achievement already exists for this user
+            const existingAchievement = existingAchievements?.find(
+              (a) => a.achievementid === achievement.id
+            );
+            
+            try {
+              if (existingAchievement) {
+                // Only update if there's a change to avoid unnecessary operations
+                if (existingAchievement.progress !== progress || (isComplete && !existingAchievement.iscomplete)) {
+                  const { error } = await supabase
+                    .from('user_achievements')
+                    .update({
+                      progress,
+                      iscomplete: isComplete,
+                      earnedat: isComplete && !existingAchievement.iscomplete ? new Date().toISOString() : existingAchievement.earnedat
+                    })
+                    .eq('id', existingAchievement.id);
+                    
+                  if (error) {
+                    console.error(`Error updating achievement ${achievement.id} for user ${metric.userId}:`, error);
+                  }
+                }
+              } else if (progress > 0) {
+                // Create new achievement with a unique ID
+                const { error } = await supabase.from('user_achievements').insert({
+                  userid: metric.userId,
+                  achievementid: achievement.id,
+                  progress,
+                  iscomplete: isComplete,
+                  earnedat: isComplete ? new Date().toISOString() : null
+                });
+                
+                if (error) {
+                  console.error(`Error creating achievement ${achievement.id} for user ${metric.userId}:`, error);
+                }
+              }
+            } catch (err) {
+              console.error(`Exception processing achievement ${achievement.id} for user ${metric.userId}:`, err);
+            }
+            
+            // Award XP if achievement is completed
+            if (isComplete) {
+              await awardXP(metric.userId, 50, 'achievement_earned');
+              
+              // Create notification
+              await supabase.from('notifications').insert({
+                userid: metric.userId,
+                type: 'achievement',
+                title: `Achievement Unlocked: ${achievement.name}`,
+                message: achievement.description,
+                data: { achievementid: achievement.id },
+                isread: false
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Exception syncing achievements for user ${metric.userId}:`, err);
         }
-      } else if (progress > existingAchievement.progress) {
-        // Update existing achievement with new progress
-        const wasComplete = existingAchievement.iscomplete;
-        
-        await supabase
-          .from('user_achievements')
-          .update({
-            progress,
-            iscomplete: isComplete,
-            earnedat: isComplete && !wasComplete ? new Date().toISOString() : existingAchievement.earnedat,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingAchievement.id);
-        
-        // Award XP if achievement was just completed
-        if (isComplete && !wasComplete) {
-          await awardXP(metric.userId, 50, 'achievement_earned');
-          
-          // Create notification
-          await supabase.from('notifications').insert({
-            userid: metric.userId,
-            type: 'achievement',
-            title: `Achievement Unlocked: ${achievement.name}`,
-            message: achievement.description,
-            data: { achievementid: achievement.id },
-            isread: false
-          });
-        }
-      }
-    }
+      })
+    );
     
-    // Update user XP and level based on review metrics
-    await updateUserXPAndLevel(metric);
+    // Add a small delay between batches to reduce server load
+    if (i + batchSize < metrics.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
 }
 
