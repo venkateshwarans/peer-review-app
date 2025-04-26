@@ -9,6 +9,13 @@
     "NEXT_PUBLIC_SUPABASE_URL": "SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "SUPABASE_ANON_KEY",
     "NEXT_PUBLIC_GITHUB_TOKEN": "GITHUB_TOKEN",
-    "NEXT_PUBLIC_GITHUB_ORG": "GITHUB_ORG"
-  }
+    "NEXT_PUBLIC_GITHUB_ORG": "GITHUB_ORG",
+    "CRON_SECRET_TOKEN": "CRON_SECRET_TOKEN"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/sync",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
